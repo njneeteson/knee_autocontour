@@ -41,6 +41,11 @@ class AutocontourKnee:
 
     peri_s4_close_radius : int
 
+    DEFAULT_MAX_ERROR : float
+        Needed for the procedural interface of the sitk gaussian filter.
+        
+    USE_SPACING : bool
+        Needed for the procedural interface of the sitk gaussian filter.
 
     Methods
     -------
@@ -67,6 +72,7 @@ class AutocontourKnee:
         peri_s1_support = 1,
         peri_s1_lower = 400, # was 350 mgHA/ccm
         peri_s1_upper = 10000, # very high value
+        peri_s1_radius = 35,
         peri_s2_sigma = 1.5,
         peri_s2_support = 1,
         peri_s2_lower = 350, # was 250 mgHA/ccm
@@ -104,6 +110,10 @@ class AutocontourKnee:
         peri_s1_upper : float
             Upper threshold for the threshold binarization in step 1 of the
             method that estimates the periosteal mask. Default is 10000 HU.
+
+        peri_s1_radius : int
+            Radius of dilations in step 1 of the method that estimates the
+            periosteal mask. Default is 35 voxels.
 
         peri_s2_sigma : float
             Variance to use for the gaussian filtering in step 2 of the method
@@ -143,20 +153,28 @@ class AutocontourKnee:
             method that estimates the periosteal mask. Default is 10000 HU.
 
         peri_s3_radius : int
+            Radius of dilations and erosions when performing the close
+            with connected components labelling in step 3 of the method that
+            estimates the periosteal mask. Default is 5 voxels.
 
         peri_s4_open_radius : int
+            Radius for the morphological opening in step 4 of the method that
+            estimates the periosteal mask. Default is 8 voxels.
 
         peri_s4_close_radius : int
+            Radius for the morphological closing in step 4 of the method that
+            estimates the periosteal mask. Default is 16 voxels.
 
         """
 
         self.in_value = in_value
-        self.out_value = 0 # don't
+        self.out_value = 0 # this should only be zero
 
         self.peri_s1_sigma = peri_s1_sigma
         self.peri_s1_support = peri_s1_support
         self.peri_s1_lower = peri_s1_lower
         self.peri_s1_upper = peri_s1_upper
+        self.peri_s1_radius = peri_s1_radius
 
         self.peri_s2_sigma = peri_s2_sigma
         self.peri_s2_support = peri_s2_support
@@ -247,7 +265,7 @@ class AutocontourKnee:
 
         img_segmented = sitk.BinaryDilate(
             img_segmented,
-            [35, 35, 35], sitk.sitkBall,
+            [self.peri_s1_radius]*3, sitk.sitkBall,
             self.out_value, self.in_value
         )
 
