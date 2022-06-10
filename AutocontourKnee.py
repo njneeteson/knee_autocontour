@@ -9,37 +9,37 @@ class AutocontourKnee:
     ----------
     in_value : int
 
-    sigma0 : float
+    peri_s1_sigma : float
 
-    support0 : int
+    peri_s1_support : int
 
-    lower0 : float
+    peri_s1_lower : float
 
-    upper0 : float
+    peri_s1_upper : float
 
-    sigma1 : float
+    peri_s2_sigma : float
 
-    support1 : int
+    peri_s2_support : int
 
-    lower1 : float
+    peri_s2_lower : float
 
-    upper1 : float
+    peri_s2_upper : float
 
-    misc1 : int
+    peri_s2_radius : int
 
-    sigma2 : float
+    peri_s3_sigma : float
 
-    support2 : int
+    peri_s3_support : int
 
-    lower2 : float
+    peri_s3_lower : float
 
-    upper2 : float
+    peri_s3_upper : float
 
-    misc1_2 : int
+    peri_s3_radius : int
 
-    misc1_3 : int
+    peri_s4_open_radius : int
 
-    misc1_4 : int
+    peri_s4_close_radius : int
 
 
     Methods
@@ -63,22 +63,22 @@ class AutocontourKnee:
     def __init__(
         self,
         in_value = 127,
-        sigma0 = 1.5,
-        support0 = 1,
-        lower0 = 400, # was 350 mgHA/ccm
-        upper0 = 10000, # very high value
-        sigma1 = 1.5,
-        support1 = 1,
-        lower1 = 350, # was 250 mgHA/ccm
-        upper1 = 10000,
-        misc1 = 10,
-        sigma2 = 1.5,
-        support2 = 1,
-        lower2 = 500, # was 350 mgHA/ccm
-        upper2 = 10000, # very high value
-        misc1_2 = 5,
-        misc1_3 = 8,
-        misc1_4 = 16
+        peri_s1_sigma = 1.5,
+        peri_s1_support = 1,
+        peri_s1_lower = 400, # was 350 mgHA/ccm
+        peri_s1_upper = 10000, # very high value
+        peri_s2_sigma = 1.5,
+        peri_s2_support = 1,
+        peri_s2_lower = 350, # was 250 mgHA/ccm
+        peri_s2_upper = 10000,
+        peri_s2_radius = 10,
+        peri_s3_sigma = 1.5,
+        peri_s3_support = 1,
+        peri_s3_lower = 500, # was 350 mgHA/ccm
+        peri_s3_upper = 10000, # very high value
+        peri_s3_radius = 5,
+        peri_s4_open_radius = 8,
+        peri_s4_close_radius = 16
         ):
         """
         Initialization method.
@@ -89,89 +89,89 @@ class AutocontourKnee:
             Integer value to use for voxels that are foreground.
             Default is 127.
 
-        sigma0 : float
+        peri_s1_sigma : float
             Variance to use for the gaussian filtering in step 1 of the method
             that estimates the periosteal mask. Default is 1.5.
 
-        support0 : int
+        peri_s1_support : int
             The support to use for the gaussian filtering in step 1 of the
             method that estimates the periosteal mask. Default is 1.
 
-        lower0 : float
+        peri_s1_lower : float
             Lower threshold for the threshold binarization in step 1 of the
             method that estimates the periosteal mask. Default is 400 HU.
 
-        upper0 : float
+        peri_s1_upper : float
             Upper threshold for the threshold binarization in step 1 of the
             method that estimates the periosteal mask. Default is 10000 HU.
 
-        sigma1 : float
+        peri_s2_sigma : float
             Variance to use for the gaussian filtering in step 2 of the method
             that estimates the periosteal mask. Default is 1.5.
 
-        support1 : int
+        peri_s2_support : int
             The support to use for the gaussian filtering in step 2 of the
             method that estimates the periosteal mask. Default is 1.
 
-        lower1 : float
+        peri_s2_lower : float
             Lower threshold for the threshold binarization in step 2 of the
             method that estimates the periosteal mask. Default is 350 HU.
 
-        upper1 : float
+        peri_s2_upper : float
             Upper threshold for the threshold binarization in step 2 of the
             method that estimates the periosteal mask. Default is 10000 HU.
 
-        misc1 : int
-            Number of dilations and erosions to use when performing the close
+        peri_s2_radius : int
+            Radius of dilations and erosions when performing the close
             with connected components labelling in step 2 of the method that
             estimates the periosteal mask. Default is 10 voxels.
 
-        sigma2 : float
+        peri_s3_sigma : float
             Variance to use for the gaussian filtering in step 3 of the method
             that estimates the periosteal mask. Default is 1.5.
 
-        support2 : int
+        peri_s3_support : int
             The support to use for the gaussian filtering in step 3 of the
             method that estimates the periosteal mask. Default is 1.
 
-        lower2 : float
-            Lower threshold for the threshold binarization in step 2 of the
-            method that estimates the periosteal mask. Default is 350 HU.
+        peri_s3_lower : float
+            Lower threshold for the threshold binarization in step 3 of the
+            method that estimates the periosteal mask. Default is 500 HU.
 
-        upper2 : float
-            Upper threshold for the threshold binarization in step 2 of the
+        peri_s3_upper : float
+            Upper threshold for the threshold binarization in step 3 of the
             method that estimates the periosteal mask. Default is 10000 HU.
 
-        misc1_2 : int
+        peri_s3_radius : int
 
-        misc1_3 : int
+        peri_s4_open_radius : int
 
-        misc1_4 : int
+        peri_s4_close_radius : int
 
         """
 
         self.in_value = in_value
         self.out_value = 0 # don't
 
-        self.sigma0 = sigma0
-        self.support0 = support0
-        self.lower0 = lower0
-        self.upper0 = upper0
+        self.peri_s1_sigma = peri_s1_sigma
+        self.peri_s1_support = peri_s1_support
+        self.peri_s1_lower = peri_s1_lower
+        self.peri_s1_upper = peri_s1_upper
 
-        self.sigma1 = sigma1
-        self.support1 = support1
-        self.lower1 = lower1
-        self.upper1 = upper1
-        self.misc1 = misc1
+        self.peri_s2_sigma = peri_s2_sigma
+        self.peri_s2_support = peri_s2_support
+        self.peri_s2_lower = peri_s2_lower
+        self.peri_s2_upper = peri_s2_upper
+        self.peri_s2_radius = peri_s2_radius
 
-        self.sigma2 = sigma2
-        self.support2 = support2
-        self.lower2 = lower2
-        self.upper2 = upper2
-        self.misc1_2 = misc1_2
+        self.peri_s3_sigma = peri_s3_sigma
+        self.peri_s3_support = peri_s3_support
+        self.peri_s3_lower = peri_s3_lower
+        self.peri_s3_upper = peri_s3_upper
+        self.peri_s3_radius = peri_s3_radius
 
-        self.misc1_3 = misc1_3
-        self.misc1_4 = misc1_4
+        self.peri_s4_open_radius = peri_s4_open_radius
+        self.peri_s4_close_radius = peri_s4_close_radius
 
         self.DEFAULT_MAX_ERROR = 0.01
         self.USE_SPACING = False
@@ -232,8 +232,8 @@ class AutocontourKnee:
         # STEP 1: Mask out the largest bone only
 
         img_segmented = self._gaussian_and_threshold(
-            img, self.sigma0, self.support0,
-            self.lower0, self.upper0
+            img, self.peri_s1_sigma, self.peri_s1_support,
+            self.peri_s1_lower, self.peri_s1_upper
         )
 
         # component labelling to keep only largest region
@@ -270,8 +270,8 @@ class AutocontourKnee:
 
         # threshold using low threshold
         img_segmented = self._gaussian_and_threshold(
-            img_masked, self.sigma1, self.support1,
-            self.lower1, self.upper1
+            img_masked, self.peri_s2_sigma, self.peri_s2_support,
+            self.peri_s2_lower, self.peri_s2_upper
         )
 
         # keep only largest component
@@ -279,7 +279,7 @@ class AutocontourKnee:
 
         # dilate/conn comp/erode to close holes in cortex
         img_segmented = self._close_with_connected_components(
-            img_segmented, self.misc1
+            img_segmented, self.peri_s2_radius
         )
 
         # now mask the image using the latest segmentation
@@ -292,13 +292,13 @@ class AutocontourKnee:
 
         # gaussian blur and segment with higher threshold
         img_segmented = self._gaussian_and_threshold(
-            img_masked, self.sigma2, self.support2,
-            self.lower2, self.upper2
+            img_masked, self.peri_s3_sigma, self.peri_s3_support,
+            self.peri_s3_lower, self.peri_s3_upper
         )
 
         # dilate/conn comp/erode to close holes in cortex
         img_segmented = self._close_with_connected_components(
-            img_segmented, self.misc1_2
+            img_segmented, self.peri_s3_radius
         )
 
         # again, mask the image with the new segmentation
@@ -316,7 +316,7 @@ class AutocontourKnee:
 
         # do an opening on the diff
         img_segmented_diff_open = sitk.BinaryMorphologicalOpening(
-            img_segmented_diff, [self.misc1_3]*3, sitk.sitkBall,
+            img_segmented_diff, [self.peri_s4_open_radius]*3, sitk.sitkBall,
             self.out_value, self.in_value
         )
 
@@ -333,7 +333,7 @@ class AutocontourKnee:
         # surface features. Qualitatively, it seems to me like a candidate for
         # improving the algorithm would be to replace this with an opening
         peri_mask = sitk.BinaryMorphologicalClosing(
-            peri_mask, [self.misc1_4]*3, sitk.sitkBall,
+            peri_mask, [self.peri_s4_close_radius]*3, sitk.sitkBall,
             self.in_value
         )
 
