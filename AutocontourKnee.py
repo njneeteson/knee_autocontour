@@ -50,9 +50,15 @@ class AutocontourKnee:
 
     endo_upper : float
 
-    endo_peel : int
+    endo_min_cort_th : int
+
+    endo_open_radius : int
 
     endo_min_number : int
+
+    endo_open_close_radius : int
+
+    endo_corner_open_radius : int
 
     endo_close_radius : int
 
@@ -85,27 +91,30 @@ class AutocontourKnee:
         in_value = 127,
         peri_s1_sigma = 1.5,
         peri_s1_support = 1,
-        peri_s1_lower = 400, # was 350 mgHA/ccm
+        peri_s1_lower = 919, # was 350 mgHA/ccm
         peri_s1_upper = 10000, # very high value
         peri_s1_radius = 35,
         peri_s2_sigma = 1.5,
         peri_s2_support = 1,
-        peri_s2_lower = 350, # was 250 mgHA/ccm
+        peri_s2_lower = 660, # was 250 mgHA/ccm
         peri_s2_upper = 10000,
         peri_s2_radius = 10,
         peri_s3_sigma = 1.5,
         peri_s3_support = 1,
-        peri_s3_lower = 500, # was 350 mgHA/ccm
+        peri_s3_lower = 919, # was 350 mgHA/ccm
         peri_s3_upper = 10000, # very high value
         peri_s3_radius = 5,
         peri_s4_open_radius = 8,
         peri_s4_close_radius = 16,
         endo_sigma = 2,
         endo_support = 3,
-        endo_lower = 600, # was 550 mg HA/ccm
+        endo_lower = 1444, # was 550 mg HA/ccm
         endo_upper = 10000,
-        endo_peel = 4,
-        endo_min_number = 300000,
+        endo_min_cort_th = 4,
+        endo_open_radius = 3,
+        endo_min_number = 1000, # should be 300000 for full image,
+        endo_open_close_radius = 15,
+        endo_corner_open_radius = 3,
         endo_close_radius = 50
         ):
         """
@@ -208,8 +217,15 @@ class AutocontourKnee:
             of the endosteal mask relative to the contour of the periosteal
             mask. Default is 4 voxels.
 
+        endo_open_radius : int
+            Radius for the morphological opening in the method that
+            estimates the endosteal mask. Default is 3 voxels.
+
         endo_min_number : int
 
+        endo_open_close_radius : int
+
+        endo_corner_open_radius : int
 
         endo_close_radius : int
 
@@ -242,8 +258,12 @@ class AutocontourKnee:
         self.endo_sigma = endo_sigma
         self.endo_support = endo_support
         self.endo_lower = endo_lower
-        self.endo_peel = endo_peel
+        self.endo_upper = endo_upper
+        self.endo_min_cort_th = endo_min_cort_th
+        self.endo_open_radius = endo_open_radius
         self.endo_min_number = endo_min_number
+        self.endo_open_close_radius = endo_open_close_radius
+        self.endo_corner_open_radius = endo_corner_open_radius
         self.endo_close_radius = endo_close_radius
 
         self.DEFAULT_MAX_ERROR = 0.01
@@ -304,7 +324,7 @@ class AutocontourKnee:
             the input image.
         """
 
-        img_conn = sitk.ConnectedComponent(img)
+        img_conn = sitk.ConnectedComponent(img, img, True)
         img_conn = sitk.RelabelComponent(img_conn, sortByObjectSize=True)
         img_conn = self.in_value*(img_conn == 1)
 
@@ -371,6 +391,45 @@ class AutocontourKnee:
 
         return img
 
+    def _open_with_connected_components(self, img, radius):
+        """
+        Perform a morphological opening operation on a binary image, except
+        with a connected component filtering step to keep only the largest
+        connected component of the background interposed between the erosion
+        and the dilation.
+
+        Parameters
+        ----------
+        img : sitk.Image
+            The binary image to filter.
+
+        radius : int
+            The radius to use for the dilation and erosion.
+
+        Returns
+        -------
+        sitk.Image
+            The filtered image.
+        """
+
+        # erode back the dilated bone volume
+        img = sitk.BinaryErode(
+            img, [radius]*3, sitk.sitkBall,
+            self.out_value, self.in_value
+        )
+
+        # perform connected components on background
+        img = self._get_largest_connected_component(img)
+
+        # dilate to close holes in cortex
+        img = sitk.BinaryDilate(
+            img, [radius]*3, sitk.sitkBall,
+            self.out_value, self.in_value
+        )
+
+
+        return img
+
     def _extract_large_regions(self, img, num_voxels):
         """
         Take a binary image and use connected components and label stats to
@@ -391,19 +450,10 @@ class AutocontourKnee:
         """
 
         # create an image of zeros as a base
-        img_filtered = 0.0*img
-        img_cl = sitk.ConnectedComponent(img)
+        img_cl = sitk.ConnectedComponent(img, img, True)
+        img_cl_min = sitk.RelabelComponent(img_cl, num_voxels, True)
 
-        stats = sitk.LabelIntensityStatisticsImageFilter()
-        stats.Execute(img,img_cl)
-
-        for label in stats.GetLabels():
-            count = stats.GetCount(label)
-            if count >= num_voxels:
-                label_mask = (img_cl == label)
-                img_filtered = sitk.Add(img_filtered,label_mask)
-
-        return img_filtered
+        return self.in_value*(img_cl_min>0)
 
     def get_periosteal_mask(self, img):
         """
@@ -526,7 +576,8 @@ class AutocontourKnee:
         # surface features. Qualitatively, it seems to me like a candidate for
         # improving the algorithm would be to replace this with an opening
         peri_mask = sitk.BinaryMorphologicalClosing(
-            peri_mask, [self.peri_s4_close_radius]*3, sitk.sitkBall,
+            peri_mask,
+            [self.peri_s4_close_radius]*3, sitk.sitkBall,
             self.in_value
         )
 
@@ -557,8 +608,114 @@ class AutocontourKnee:
             A binary image that is the endosteal mask.
         """
 
+        # first, mask the image with the periosteal mask
+        img_masked = sitk.Mask(img, peri)
 
-        pass
+        # next, do a gaussian and binarization to get a cortical mask
+        cort = self._gaussian_and_threshold(
+            img_masked, self.endo_sigma, self.endo_support,
+            self.endo_lower, self.endo_upper
+        )
+
+        # erode the peri mask to get the minimum cortical thickness
+        peri_eroded = sitk.BinaryErode(
+            peri, [self.endo_min_cort_th]*3, sitk.sitkBall,
+            self.out_value, self.in_value
+        )
+
+        # get an endosteal mask first guess by subtracting the cortical mask
+        # from the periosteal mask
+        endo = self.in_value*sitk.And(peri,sitk.Not(cort))
+
+        # now mask the endo mask using the eroded peri mask
+        endo = sitk.Mask(endo, peri_eroded)
+
+        # invert the endo mask to get a cort mask (sort of)
+        cort = self._invert_binary_image(endo)
+
+        # get rid of disconnected background inside of bone
+        cort = self._get_largest_connected_component(cort)
+
+        # mask out the regions outside of periosteal contour to keep
+        # only the cortical bone region
+        cort = sitk.Mask(cort, peri)
+
+        # get the trab region as the whole bone less the cortex
+        trab = self.in_value*sitk.And(peri, sitk.Not(cort))
+
+        # keep only the largest connected region of trab
+        trab = self._get_largest_connected_component(trab)
+
+        # opening with a cl labelling largest comp extraction in the middle to
+        # get rid of Tb speckles not connected to trab region
+        trab = self._open_with_connected_components(trab, self.endo_open_radius)
+
+        trab = sitk.BinaryMorphologicalClosing(
+            trab,
+            [self.endo_open_close_radius]*3, sitk.sitkBall,
+            self.in_value
+        )
+
+        trab = sitk.Mask(trab, peri)
+
+        trab_open = sitk.BinaryMorphologicalOpening(
+            trab, [self.endo_open_close_radius]*3, sitk.sitkBall,
+            self.out_value, self.in_value
+        )
+
+        # find where the inverse of trab and trab_open are not the same and call
+        # it the corner mask
+        corners = self.in_value*sitk.And(trab, sitk.Not(trab_open))
+
+        corners = sitk.BinaryErode(
+            corners, [self.endo_corner_open_radius]*3, sitk.sitkBall,
+            self.out_value, self.in_value
+        )
+
+        corners = self._extract_large_regions(corners, self.endo_min_number)
+
+        corners = sitk.BinaryDilate(
+            corners, [self.endo_corner_open_radius]*3, sitk.sitkBall,
+            self.out_value, self.in_value
+        )
+
+        corners = self._extract_large_regions(corners, self.endo_min_number)
+
+        # In the IPL script this operation is done again with the following comment:
+        # ! CL to handle case where dilation of null AIM give a full AIM
+        # in this script repeating this operation with a different max region size
+        # would not do anything do it is ommitted
+
+
+
+        trab = sitk.Or(trab, trab_open)
+        trab = sitk.Or(trab, corners)
+
+        trab = sitk.BinaryMorphologicalClosing(
+            trab,
+            [self.endo_close_radius]*3, sitk.sitkBall,
+            self.in_value
+        )
+
+        # mask the trab mask with the eroded peri mask to ensure a minimum
+        # cortical thickness
+        trab = sitk.Mask(trab, peri_eroded)
+
+        # In the IPL script there is a slicewise component labelling filter
+        # step here but you can't do that efficiently in SITK, and also it
+        # doesnt really make sense to me to do that on a knee anyways
+
+        cort = self.in_value*sitk.And(peri, sitk.Not(trab))
+
+
+        ##### NOTE: NOT FINISHED
+        # left off at line 338 of IPLV6_AUTOK_ENDO_KNEE.COM
+
+        return cort
+
+
+
+
 
     def get_masks(self, img):
         """
@@ -586,7 +743,13 @@ class AutocontourKnee:
         return 'Autocontour(--repr to be implemented--)'
 
     def save_parameters_to_yaml(self,fn):
+        '''
+        To be implemented
+        '''
         pass
 
     def load_parameters_from_yaml(self,fn):
+        '''
+        To be implemented
+        '''
         pass
