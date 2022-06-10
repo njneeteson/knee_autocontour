@@ -42,6 +42,20 @@ class AutocontourKnee:
 
     peri_s4_close_radius : int
 
+    endo_sigma : float
+
+    endo_support : int
+
+    endo_lower : float
+
+    endo_upper : float
+
+    endo_peel : int
+
+    endo_min_number : int
+
+    endo_close_radius : int
+
     DEFAULT_MAX_ERROR : float
         Needed for the procedural interface of the sitk gaussian filter.
 
@@ -85,7 +99,14 @@ class AutocontourKnee:
         peri_s3_upper = 10000, # very high value
         peri_s3_radius = 5,
         peri_s4_open_radius = 8,
-        peri_s4_close_radius = 16
+        peri_s4_close_radius = 16,
+        endo_sigma = 2,
+        endo_support = 3,
+        endo_lower = 600, # was 550 mg HA/ccm
+        endo_upper = 10000,
+        endo_peel = 4,
+        endo_min_number = 300000,
+        endo_close_radius = 50
         ):
         """
         Initialization method.
@@ -166,6 +187,32 @@ class AutocontourKnee:
             Radius for the morphological closing in step 4 of the method that
             estimates the periosteal mask. Default is 16 voxels.
 
+        endo_sigma : float
+            Variance to use for the gaussian filtering in the method
+            that estimates the endosteal mask. Default is 2.
+
+        endo_support : int
+            Support to use for the gaussian filtering in the method
+            that estimates the endosteal mask. Default is 3.
+
+        endo_lower : float
+            Lower threshold for the threshold binarization in the
+            method that estimates the endosteal mask. Default is 600 HU.
+
+        endo_upper : float
+            Upper threshold for the threshold binarization in the
+            method that estimates the endosteal mask. Default is 10000 HU.
+
+        endo_min_cort_th : int
+            Minimum cortical thickness, affects the positioning of the contour
+            of the endosteal mask relative to the contour of the periosteal
+            mask. Default is 4 voxels.
+
+        endo_min_number : int
+
+
+        endo_close_radius : int
+
         """
 
         self.in_value = in_value
@@ -191,6 +238,13 @@ class AutocontourKnee:
 
         self.peri_s4_open_radius = peri_s4_open_radius
         self.peri_s4_close_radius = peri_s4_close_radius
+
+        self.endo_sigma = endo_sigma
+        self.endo_support = endo_support
+        self.endo_lower = endo_lower
+        self.endo_peel = endo_peel
+        self.endo_min_number = endo_min_number
+        self.endo_close_radius = endo_close_radius
 
         self.DEFAULT_MAX_ERROR = 0.01
         self.USE_SPACING = False
@@ -316,6 +370,40 @@ class AutocontourKnee:
         )
 
         return img
+
+    def _extract_large_regions(self, img, num_voxels):
+        """
+        Take a binary image and use connected components and label stats to
+        keep only connected regions above a certain size.
+
+        Parameters
+        ----------
+        img : sitk.Image
+            A binary image to be filtered.
+
+        num_voxels : int
+            The minimum number of voxels a region needs to have to be kept.
+
+        Returns
+        -------
+        sitk.Image
+            The filtered binary image.
+        """
+
+        # create an image of zeros as a base
+        img_filtered = 0.0*img
+        img_cl = sitk.ConnectedComponent(img)
+
+        stats = sitk.LabelIntensityStatisticsImageFilter()
+        stats.Execute(img,img_cl)
+
+        for label in stats.GetLabels():
+            count = stats.GetCount(label)
+            if count >= num_voxels:
+                label_mask = (img_cl == label)
+                img_filtered = sitk.Add(img_filtered,label_mask)
+
+        return img_filtered
 
     def get_periosteal_mask(self, img):
         """
@@ -468,25 +556,6 @@ class AutocontourKnee:
         sitk.Image
             A binary image that is the endosteal mask.
         """
-
-        # STEP 1
-
-        # gaussian filter and binarization
-        img_segmented = self._gaussian_and_threshold(
-            img, self.endo_s1_sigma, self.endo_s1_support,
-            self.endo_s1_lower, self.endo_s1_upper
-        )
-
-        # keep only largest component
-        img_segmented = self._get_largest_connected_component(img_segmented)
-
-        # STEP 2
-
-
-        # STEP 3
-
-
-        # STEP 4
 
 
         pass
