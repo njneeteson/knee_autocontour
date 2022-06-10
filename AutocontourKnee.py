@@ -43,7 +43,7 @@ class AutocontourKnee:
 
     DEFAULT_MAX_ERROR : float
         Needed for the procedural interface of the sitk gaussian filter.
-        
+
     USE_SPACING : bool
         Needed for the procedural interface of the sitk gaussian filter.
 
@@ -199,6 +199,31 @@ class AutocontourKnee:
         sigma, support,
         lower, upper
         ):
+        """
+        Gaussian smooth and then binarize an image using a threshold filter.
+
+        Parameters
+        ----------
+        img : sitk.Image
+            The input image.
+
+        sigma : float
+            Variance for the gaussian filtering.
+
+        support : int
+            Support for the gaussian filtering.
+
+        lower: float
+            Lower threshold for the binarization.
+
+        upper : float
+            Upper threshold for the binarization.
+
+        Returns
+        -------
+        sitk.Image
+            The binarized image.
+        """
 
         # gaussian filtering
         img_gauss = sitk.DiscreteGaussian(img, sigma, support, self.DEFAULT_MAX_ERROR, self.USE_SPACING)
@@ -209,6 +234,20 @@ class AutocontourKnee:
         return img_segmented
 
     def _get_largest_connected_component(self, img):
+        """
+        Get the largest connected component in a binary image.
+
+        Parameters
+        ----------
+        img : sitk.Image
+            The binary image to filter.
+
+        Returns
+        -------
+        sitk.Image
+            A binary image containing only the largest connected component from
+            the input image.
+        """
 
         img_conn = sitk.ConnectedComponent(img)
         img_conn = sitk.RelabelComponent(img_conn, sortByObjectSize=True)
@@ -217,10 +256,42 @@ class AutocontourKnee:
         return img_conn
 
     def _invert_binary_image(self, img):
+        """
+        Swap the foreground and background of a binary image.
+
+        Parameters
+        ----------
+        img : sitk.Image
+            The binary image to invert.
+
+        Returns
+        -------
+        sitk.Image
+            The inverted binary image.
+        """
 
         return self.in_value*(img!=self.in_value)
 
     def _close_with_connected_components(self, img, radius):
+        """
+        Perform a morphological closing operation on a binary image, except
+        with a connected component filtering step to keep only the largest
+        connected component of the background interposed between the dilation
+        and the erosion.
+
+        Parameters
+        ----------
+        img : sitk.Image
+            The binary image to filter.
+
+        radius : int
+            The radius to use for the dilation and erosion.
+
+        Returns
+        -------
+        sitk.Image
+            The filtered image.
+        """
 
         # dilate to close holes in cortex
         img = sitk.BinaryDilate(
@@ -246,6 +317,21 @@ class AutocontourKnee:
         return img
 
     def get_periosteal_mask(self, img):
+        """
+        Compute the periosteal mask from an input image.
+
+        Parameters
+        ----------
+        img : sitk.Image
+            The gray-scale AIM. Currently this is written for images in HU,
+            if you want to input a density image then you'll need to modify
+            the lower and upper thresholds to be in the correct units.
+
+        Returns
+        -------
+        sitk.Image
+            A binary image that is the periosteal mask.
+        """
 
         # STEP 1: Mask out the largest bone only
 
