@@ -449,9 +449,43 @@ class AutocontourKnee:
 
 
     def get_endosteal_mask(self, img, peri):
+        """
+        Compute the endosteal mask from the image and periosteal mask.
+
+        Parameters
+        ----------
+        img : sitk.Image
+            The gray-scale AIM. Currently this is written for images in HU,
+            if you want to input a density image then you'll need to modify
+            the lower and upper thresholds to be in the correct units.
+
+        peri : sitk.Image
+            A binary image that should be the periosteal mask.
+
+        Returns
+        -------
+        sitk.Image
+            A binary image that is the endosteal mask.
+        """
         pass
 
     def get_masks(self, img):
+        """
+        Combined method to compute both the periosteal and endosteal masks.
+
+        Parameters
+        ----------
+        img : sitk.Image
+            The gray-scale AIM. Currently this is written for images in HU,
+            if you want to input a density image then you'll need to modify
+            the lower and upper thresholds to be in the correct units.
+
+        Returns
+        -------
+        (sitk.Image, sitk.Image)
+            Tuple of two binary images. The first image is the periosteal mask
+            and the second image is the endosteal mask.
+        """
         pass
 
     def __str__(self):
