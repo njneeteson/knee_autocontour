@@ -42,34 +42,6 @@ class AutocontourKnee:
 
     peri_s4_close_radius : int
 
-    endo_s1_sigma : float
-
-    endo_s1_support : int
-
-    endo_s1_lower : float
-
-    endo_s1_upper : float
-
-    endo_s2_sigma : float
-
-    endo_s2_support : int
-
-    endo_s2_lower : float
-
-    endo_s2_radius : int
-
-    endo_s3_sigma : float
-
-    endo_s3_support : int
-
-    endo_s3_lower : float
-
-    endo_s3_radius : int
-
-    endo_s4_open_radius : int
-
-    endo_s4_close_radius : int
-
     DEFAULT_MAX_ERROR : float
         Needed for the procedural interface of the sitk gaussian filter.
 
@@ -113,23 +85,7 @@ class AutocontourKnee:
         peri_s3_upper = 10000, # very high value
         peri_s3_radius = 5,
         peri_s4_open_radius = 8,
-        peri_s4_close_radius = 16,
-        endo_s1_sigma = 1.5,
-        endo_s1_support = 1,
-        endo_s1_lower = 400, # was 350 mgHA/ccm
-        endo_s1_upper = 10000,
-        endo_s2_sigma = 1.5,
-        endo_s2_support = 1,
-        endo_s2_lower = 300, # was 250 mgHA/ccm
-        endo_s2_upper = 10000,
-        endo_s2_radius = 10,
-        endo_s3_sigma = 1.5,
-        endo_s3_support = 1,
-        endo_s3_lower = 400, # was 350 mgHA/ccm
-        endo_s3_upper = 10000,
-        endo_s3_radius = 5,
-        endo_s4_open_radius = 8,
-        endo_s4_close_radius = 16
+        peri_s4_close_radius = 16
         ):
         """
         Initialization method.
@@ -210,62 +166,6 @@ class AutocontourKnee:
             Radius for the morphological closing in step 4 of the method that
             estimates the periosteal mask. Default is 16 voxels.
 
-        endo_s1_sigma : float
-            Variance to use for the gaussian filtering in step 1 of the method
-            that estimates the endosteal mask. Default is 1.5.
-
-        endo_s1_support : int
-            The support to use for the gaussian filtering in step 1 of the
-            method that estimates the endosteal mask. Default is 1.
-
-        endo_s1_lower : float
-            Lower threshold for the threshold binarization in step 1 of the
-            method that estimates the endosteal mask. Default is 400 HU.
-
-        endo_s1_upper : float
-            Upper threshold for the threshold binarization in step 1 of the
-            method that estimates the endosteal mask. Default is 10000 HU.
-
-        endo_s2_sigma : float
-            Variance to use for the gaussian filtering in step 2 of the method
-            that estimates the endosteal mask. Default is 1.5.
-
-        endo_s2_support : int
-            The support to use for the gaussian filtering in step 2 of the
-            method that estimates the endosteal mask. Default is 1.
-
-        endo_s2_lower : float
-            Lower threshold for the threshold binarization in step 2 of the
-            method that estimates the endosteal mask. Default is 300 HU.
-
-        endo_s2_upper : float
-            Upper threshold for the threshold binarization in step 2 of the
-            method that estimates the endosteal mask. Default is 10000 HU.
-
-        endo_s2_radius : int
-
-        endo_s3_sigma : float
-            Variance to use for the gaussian filtering in step 3 of the method
-            that estimates the endosteal mask. Default is 1.5.
-
-        endo_s3_support : int
-            The support to use for the gaussian filtering in step 3 of the
-            method that estimates the endosteal mask. Default is 1.
-
-        endo_s3_lower : float
-            Lower threshold for the threshold binarization in step 3 of the
-            method that estimates the endosteal mask. Default is 400 HU.
-
-        endo_s3_upper : float
-            Upper threshold for the threshold binarization in step 3 of the
-            method that estimates the endosteal mask. Default is 10000 HU.
-
-        endo_s3_radius : int
-
-        endo_s4_open_radius : int
-
-        endo_s4_close_radius : int
-
         """
 
         self.in_value = in_value
@@ -291,26 +191,6 @@ class AutocontourKnee:
 
         self.peri_s4_open_radius = peri_s4_open_radius
         self.peri_s4_close_radius = peri_s4_close_radius
-
-        self.endo_s1_sigma = endo_s1_sigma
-        self.endo_s1_support = endo_s1_support
-        self.endo_s1_lower = endo_s1_lower
-        self.endo_s1_upper = endo_s1_upper
-
-        self.endo_s2_sigma = endo_s2_sigma
-        self.endo_s2_support = endo_s2_support
-        self.endo_s2_lower = endo_s2_lower
-        self.endo_s2_upper = endo_s2_upper
-        self.endo_s2_radius = endo_s2_radius
-
-        self.endo_s3_sigma = endo_s3_sigma
-        self.endo_s3_support = endo_s3_support
-        self.endo_s3_lower = endo_s3_lower
-        self.endo_s3_upper = endo_s3_upper
-        self.endo_s3_radius = endo_s3_radius
-
-        self.endo_s4_open_radius = endo_s4_open_radius
-        self.endo_s4_close_radius = endo_s4_close_radius
 
         self.DEFAULT_MAX_ERROR = 0.01
         self.USE_SPACING = False
@@ -591,6 +471,14 @@ class AutocontourKnee:
 
         # STEP 1
 
+        # gaussian filter and binarization
+        img_segmented = self._gaussian_and_threshold(
+            img, self.endo_s1_sigma, self.endo_s1_support,
+            self.endo_s1_lower, self.endo_s1_upper
+        )
+
+        # keep only largest component
+        img_segmented = self._get_largest_connected_component(img_segmented)
 
         # STEP 2
 
