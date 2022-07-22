@@ -705,13 +705,13 @@ class AutocontourKnee:
         # step here but you can't do that efficiently in SITK, and also it
         # doesnt really make sense to me to do that on a knee anyways
 
-        cort = self.in_value*sitk.And(peri, sitk.Not(trab))
+        cort_final = self.in_value*sitk.And(peri, sitk.Not(trab))
 
+        # Here is another slicewise component
+        
+        trab_final = self.in_value*sitk.And(peri, sitk.Not(cort_final))
 
-        ##### NOTE: NOT FINISHED
-        # left off at line 338 of IPLV6_AUTOK_ENDO_KNEE.COM
-
-        return cort
+        return cort_final, trab_final
 
 
 
